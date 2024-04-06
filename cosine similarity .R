@@ -12,7 +12,7 @@ for (file in filelist) {
   document_list[state] = df_allbody
 }
 
-allsections = readtext("/Users/gege/Desktop/Legal Analytics Research Project/StateModelAdoption_IndividualStatesCSVfiles/All Sections.txt")
+allsections = readtext("/Users/Desktop/Legal Analytics /StateModelAdoption_IndividualStatesCSVfiles/All Sections.txt")
 document_list["All Sections.txt"]=as.character(allsections[1,'text'])
 
 mycorpus = corpus(document_list, names(document_list))
