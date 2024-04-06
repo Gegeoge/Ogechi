@@ -1,0 +1,43 @@
+import re 
+model_law = open("All Sections.txt", encoding="utf8").read()
+# finding all dates in format MMMMM DD, YYYY
+matches = re.findall(r'(([A-z]+)\s\d{1,2},\s\d{4})', model_law)
+dates = list(map(lambda x: x[0], matches))
+# print(dates)
+
+
+# Replace the locations of all dates in the document with a unique placeholder string
+placeholder_to_string_map = {}
+
+number_of_placeholders = 0
+def generate_placeholder():
+    global number_of_placeholders
+    
+    base_placeholder = "DATE_PLACEHOLDER_"
+    number_of_placeholders += 1
+    return base_placeholder + str(number_of_placeholders)
+
+for d in dates:
+    placeholder = generate_placeholder()
+    placeholder_to_string_map[placeholder] = d
+
+    model_law = model_law.replace(d, placeholder)
+
+# Identifying all places in the document where we want to split
+splitters = [",", ".", ";", "\n"]
+common_splitter = "COMMON_SPLITTER"
+
+splits = []
+sentences = model_law
+
+for _, splitter in enumerate(splitters):
+    sentences = sentences.replace(splitter, common_splitter)
+    
+
+# replace the placeholder strings with their corresponding dates
+for placeholder, date in placeholder_to_string_map.items():
+    sentences = sentences.replace(placeholder, date)
+
+# Performing the final document split
+splits = sentences.split(common_splitter)
+print("after", splits)
