@@ -1,0 +1,91 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.metrics import classification_report, roc_curve, auc, confusion_matrix
+from sklearn.ensemble import RandomForestClassifier
+
+FILEPATH = '/Users/Desktop/Machine Learning/final project/BP-Fakebook/Train.csv'
+
+TESTFILE = '/Users/Desktop/Machine Learning/final project/BP-Fakebook/Test.csv'
+
+df = pd.read_csv(FILEPATH)
+
+#### Cleaning/Pre-processing
+
+df = df.dropna()
+df['alltext'] = df[['title', 'text']].apply(lambda x: ' '.join(x), axis=1)
+print(df.shape)
+
+train, test, train_label, test_label = train_test_split(np.array(df['alltext']), df['type'], test_size=0.3, random_state=10)
+
+#### Multinomial Naive Bayes
+
+text_clf = Pipeline([
+    ('vect', CountVectorizer(stop_words='english', lowercase=True)),
+    ('tfidf', TfidfTransformer()),
+    ('clf', MultinomialNB()),
+])
+text_clf.fit(train, train_label)
+
+#### Prediction
+
+predicted = text_clf.predict(test)
+predicted_probs = text_clf.predict_proba(test)
+print('Naive Bayes')
+print(classification_report(test_label, predicted))
+print(confusion_matrix(test_label, predicted))
+
+fake_pred_probs = predicted_probs[:, text_clf.classes_.tolist().index('fake')]
+fpr, tpr, thresholds = roc_curve(test_label, fake_pred_probs, pos_label='fake')
+roc_auc = auc(fpr, tpr)
+
+plt.figure()
+lw = 2
+plt.plot(fpr, tpr, color='darkorange',
+         lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
+plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Multinomial Naive Bayes\nReceiver operating characteristic curve')
+plt.legend(loc="lower right")
+plt.savefig('/Users/Desktop/Machine Learning/final project/BP-Fakebook/MNB_auc_curve.png')
+
+#### Random Forests
+
+rf_clf = Pipeline([
+    ('vect', CountVectorizer(stop_words='english', lowercase=True)),
+    ('tfidf', TfidfTransformer()),
+    ('rfclf', RandomForestClassifier(n_estimators=100, bootstrap=True, max_features='sqrt')),
+])
+
+rf_clf.fit(train, train_label)
+
+#### Prediction
+predicted_rf = rf_clf.predict(test)
+predicted_probs_rf = rf_clf.predict_proba(test)
+print('Random Forests')
+print(classification_report(test_label, predicted_rf))
+print(confusion_matrix(test_label, predicted_rf))
+
+fake_pred_probs_rf = predicted_probs_rf[:, rf_clf.classes_.tolist().index('fake')]
+fpr_rf, tpr_rf, thresholds_rf = roc_curve(test_label, fake_pred_probs, pos_label='fake')
+roc_auc_rf = auc(fpr_rf, tpr_rf)
+
+plt.figure()
+lw = 2
+plt.plot(fpr_rf, tpr_rf, color='darkorange',
+         lw=lw, label='ROC curve (area = %0.2f)' % roc_auc_rf)
+plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Random Forests\nReceiver operating characteristic curve')
+plt.legend(loc="lower right")
+plt.savefig('/Users/Desktop/Machine Learning/final project/BP-Fakebook/RF_auc_curve.png')
